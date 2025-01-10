@@ -37,27 +37,29 @@ local function should_ignore_window(win_id)
 	end
 	return false
 end
--- Check if neo-tree is present and adjacent
-local function is_neotree_adjacent(win_id)
+
+-- Check if any ignored filetype window is adjacent
+local function is_ignored_adjacent(win_id)
 	local wins = vim.api.nvim_tabpage_list_wins(0)
-	local neo_tree_found = false
 
 	for _, id in ipairs(wins) do
-		local buf_id = vim.api.nvim_win_get_buf(id)
-		local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-		if filetype == "neo-tree" and id ~= win_id then
-			local pos = vim.fn.win_screenpos(id)
-			local cur_pos = vim.fn.win_screenpos(win_id)
+		if id ~= win_id then
+			local buf_id = vim.api.nvim_win_get_buf(id)
+			local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
 
-			-- Check if neo-tree is on the left or right
-			if pos[2] < cur_pos[2] or pos[2] > cur_pos[2] + get_window_width(win_id) then
-				neo_tree_found = true
-				break
+			if vim.tbl_contains(M.config.ignore_filetypes, filetype) then
+				local pos = vim.fn.win_screenpos(id)
+				local cur_pos = vim.fn.win_screenpos(win_id)
+
+				-- Check if the ignored window is adjacent (left or right)
+				if pos[2] < cur_pos[2] or pos[2] > cur_pos[2] + get_window_width(win_id) then
+					return true
+				end
 			end
 		end
 	end
 
-	return neo_tree_found
+	return false
 end
 
 -- Notify function based on configuration
@@ -77,9 +79,9 @@ local function toggle_window_size(win_id)
 	-- Use the current window if no specific ID is passed
 	win_id = win_id or vim.api.nvim_get_current_win()
 
-	-- Ignore the window if its filetype is in the ignore list or neo-tree is adjacent
-	if should_ignore_window(win_id) or is_neotree_adjacent(win_id) then
-		notify("Window ignored due to its filetype or neo-tree adjacency", vim.log.levels.INFO)
+	-- Ignore the window if its filetype is in the ignore list or any ignored window is adjacent
+	if should_ignore_window(win_id) or is_ignored_adjacent(win_id) then
+		notify("Window ignored due to its filetype or adjacency to ignored filetypes", vim.log.levels.INFO)
 		return
 	end
 
@@ -121,7 +123,7 @@ local function resize_on_focus()
 
 	local win_id = vim.api.nvim_get_current_win()
 
-	if should_ignore_window(win_id) or is_neotree_adjacent(win_id) then
+	if should_ignore_window(win_id) or is_ignored_adjacent(win_id) then
 		return
 	end
 
@@ -136,8 +138,8 @@ end
 local function prevent_ignored_interaction()
 	local win_id = vim.api.nvim_get_current_win()
 
-	if should_ignore_window(win_id) or is_neotree_adjacent(win_id) then
-		notify("Interaction disabled for ignored filetype or neo-tree adjacency", vim.log.levels.INFO)
+	if should_ignore_window(win_id) or is_ignored_adjacent(win_id) then
+		notify("Interaction disabled for ignored filetype or adjacency", vim.log.levels.INFO)
 		return true
 	end
 	return false
