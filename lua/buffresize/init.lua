@@ -8,7 +8,7 @@ M.config = {
 	max_width = 0.7, -- Maximum window width (as a percentage of total width)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
+	ignore_filetypes = { "neo-tree", "toggleterm", "telescope", "yazi" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
 	notify = false, -- Whether to show notifications
 }
