@@ -9,12 +9,7 @@ M.config = {
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
 	ignore_filetypes = {
-		"NvimTree",
 		"neo-tree",
-		"NeogitStatus",
-		"NeogitPopup",
-		"NeogitCommitMessage",
-		"dap-repl",
 		"toggleterm",
 		"yazi",
 		"telescope",
@@ -149,7 +144,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_toggle,
 		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true desc = "buffresize toggle window size" }
 	)
 
 	-- Set key binding for enabling/disabling the plugin
@@ -157,7 +152,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_enable,
 		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true, desc = "Toggle buffresize plugin" }
 	)
 
 	-- Auto-resize on focus
