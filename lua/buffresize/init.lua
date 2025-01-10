@@ -57,7 +57,7 @@ end
 -- Notify function based on configuration
 local function notify(msg, level)
 	if M.config.notify then
-		vim.notify(msg, level or vim.log.levels.WARN)
+		vim.notify(msg, level or vim.log.levels.INFO)
 	end
 end
 
@@ -100,6 +100,25 @@ local function toggle_window_size()
 	notify("Window size toggled", vim.log.levels.INFO)
 end
 
+-- Function to resize window on focus change
+local function resize_on_focus()
+	if not M.config.enabled then
+		return
+	end
+
+	local win_id = vim.api.nvim_get_current_win()
+
+	-- Ignore the window if its filetype is in the ignore list
+	if should_ignore_window(win_id) then
+		return
+	end
+
+	local total_width = vim.o.columns
+	local target_width = math.floor(total_width * M.config.max_width)
+
+	smooth_resize(win_id, target_width, M.config.resize_speed)
+end
+
 -- Function to enable/disable the plugin
 local function toggle_plugin()
 	M.config.enabled = not M.config.enabled
@@ -135,6 +154,11 @@ function M.setup(opts)
 		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
 		{ noremap = true, silent = true }
 	)
+
+	-- Autocommand to resize on focus change
+	vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
+		callback = resize_on_focus,
+	})
 end
 
 -- Export functions
