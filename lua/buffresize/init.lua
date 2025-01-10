@@ -8,19 +8,7 @@ M.config = {
 	max_width = 0.7, -- Maximum window width (as a percentage of total width)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = {
-		"NvimTree",
-		"neo-tree",
-		"NeogitStatus",
-		"NeogitPopup",
-		"NeogitCommitMessage",
-		"dap-repl",
-		"toggleterm",
-		"yazi",
-		"telescope",
-		"lazy",
-		"mason",
-	},
+	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl", "help", "terminal", "quickfix", "nofile" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
 	notify = false, -- Whether to show notifications
 }
@@ -42,9 +30,6 @@ end
 local function should_ignore_window(win_id)
 	local buf_id = vim.api.nvim_win_get_buf(win_id)
 	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-	if filetype == "" then
-		return false
-	end
 	for _, ft in ipairs(M.config.ignore_filetypes) do
 		if filetype == ft then
 			return true
@@ -140,7 +125,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_toggle,
 		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true, desc = "Toggle window size" }
 	)
 
 	-- Set key binding for enabling/disabling the plugin
@@ -148,7 +133,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_enable,
 		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true, desc = "Enable/disable resize plugin" }
 	)
 
 	-- Auto-resize on focus
