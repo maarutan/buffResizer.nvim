@@ -1,83 +1,46 @@
--- buffresize.lua
--- Модуль для динамического изменения размера окон в Neovim
+-- Module for dynamic window resizing in Neovim
 
 local M = {}
 
--- Настройки по умолчанию
+-- Default settings
 M.config = {
-	min_width = 0.25, -- Минимальная ширина окна (в долях от общей ширины)
-	max_width = 0.7, -- Максимальная ширина окна (в долях от общей ширины)
-	resize_speed = 20, -- Скорость анимации (количество шагов)
-	key_toggle = "<leader>rw", -- Клавиша для переключения размера окна
-	key_enable = "<leader>re", -- Клавиша для включения/выключения плагина
-
-	-- Список игнорируемых filetype.
-	-- Добавляйте или редактируйте по необходимости:
-	ignore_filetypes = {
-		"NvimTree",
-		"neo-tree",
-		"NeogitStatus",
-		"NeogitPopup",
-		"NeogitCommitMessage",
-		"dap-repl",
-		"toggleterm",
-		"yazi",
-		"telescope",
-		"lazy",
-		"mason",
-	},
-
-	enabled = true, -- Плагин включён по умолчанию
-	notify = true, -- Показывать уведомления о действиях
+	min_width = 0.25, -- Minimum window width (as a percentage of total width)
+	max_width = 0.7, -- Maximum window width (as a percentage of total width)
+	resize_speed = 20, -- Window resize speed (in steps)
+	key_toggle = "<leader>rw", -- Key binding to toggle window size
+	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
+	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
+	enabled = true, -- Whether the plugin is enabled by default
+	notify = false, -- Whether to show notifications
 }
 
--- Хранилище состояний окон (expanded / не expanded)
+-- Table to store window states
 local window_states = {}
 
--- Утилита: получить ширину окна
+-- Function to get the window width
 local function get_window_width(win_id)
 	return vim.api.nvim_win_get_width(win_id)
 end
 
--- Утилита: установить ширину окна (если оно валидно)
+-- Function to set the window width
 local function set_window_width(win_id, width)
-	if vim.api.nvim_win_is_valid(win_id) then
-		vim.api.nvim_win_set_width(win_id, width)
-	end
+	vim.api.nvim_win_set_width(win_id, width)
 end
 
--- Проверяем, нужно ли игнорировать данное окно
+-- Check if the window should be ignored
 local function should_ignore_window(win_id)
-	if not vim.api.nvim_win_is_valid(win_id) then
-		return true
-	end
-
-	-- Проверка на плавающее окно
-	local win_config = vim.api.nvim_win_get_config(win_id)
-	if win_config.relative ~= "" then
-		return true
-	end
-
-	-- Проверка на filetype
 	local buf_id = vim.api.nvim_win_get_buf(win_id)
 	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-
-	-- Проверяем в списке игнорируемых
 	for _, ft in ipairs(M.config.ignore_filetypes) do
 		if filetype == ft then
 			return true
 		end
 	end
-
 	return false
 end
 
--- Функция плавного (пошагового) изменения размера окна
+-- Function for smooth window resizing
 local function smooth_resize(win_id, target_width, speed)
-	if not vim.api.nvim_win_is_valid(win_id) then
-		return
-	end
-
 	local current_width = get_window_width(win_id)
 	local step = (target_width - current_width) / speed
 
@@ -91,14 +54,14 @@ local function smooth_resize(win_id, target_width, speed)
 	end
 end
 
--- Обёртка над vim.notify, чтобы можно было легко отключить/включить уведомления
+-- Notify function based on configuration
 local function notify(msg, level)
 	if M.config.notify then
-		vim.notify(msg, level or vim.log.levels.INFO)
+		vim.notify(msg, level or vim.log.levels.WARN)
 	end
 end
 
--- Основная логика переключения размера текущего окна
+-- Main logic for toggling window size
 local function toggle_window_size()
 	if not M.config.enabled then
 		notify("Resize plugin is disabled", vim.log.levels.WARN)
@@ -107,17 +70,21 @@ local function toggle_window_size()
 
 	local win_id = vim.api.nvim_get_current_win()
 
+	-- Ignore the window if its filetype is in the ignore list
 	if should_ignore_window(win_id) then
-		notify("Window ignored due to its filetype or config", vim.log.levels.INFO)
+		notify("Window ignored due to its filetype", vim.log.levels.INFO)
 		return
 	end
 
 	local total_width = vim.o.columns
+	local win_width = get_window_width(win_id)
 
+	-- Initialize window state
 	if not window_states[win_id] then
 		window_states[win_id] = { expanded = false }
 	end
 
+	-- Determine target size
 	local target_width
 	if window_states[win_id].expanded then
 		target_width = math.floor(total_width * M.config.min_width)
@@ -125,14 +92,15 @@ local function toggle_window_size()
 		target_width = math.floor(total_width * M.config.max_width)
 	end
 
+	-- Perform smooth resize
 	smooth_resize(win_id, target_width, M.config.resize_speed)
 
+	-- Update window state
 	window_states[win_id].expanded = not window_states[win_id].expanded
-
 	notify("Window size toggled", vim.log.levels.INFO)
 end
 
--- Включение/выключение всего плагина (глобально)
+-- Function to enable/disable the plugin
 local function toggle_plugin()
 	M.config.enabled = not M.config.enabled
 	if M.config.enabled then
@@ -142,69 +110,35 @@ local function toggle_plugin()
 	end
 end
 
--- Функция для динамического обновления конфигурации
+-- Function to dynamically update settings
 function M.update_config(new_config)
-	-- Проверка на соответствие типов перед обновлением
-	if
-		new_config.min_width
-		and (type(new_config.min_width) ~= "number" or new_config.min_width <= 0 or new_config.min_width >= 1)
-	then
-		notify("Invalid min_width value. It should be a number between 0 and 1.", vim.log.levels.ERROR)
-		return
-	end
-
-	if
-		new_config.max_width
-		and (type(new_config.max_width) ~= "number" or new_config.max_width <= 0 or new_config.max_width >= 1)
-	then
-		notify("Invalid max_width value. It should be a number between 0 and 1.", vim.log.levels.ERROR)
-		return
-	end
-
-	if new_config.resize_speed and (type(new_config.resize_speed) ~= "number" or new_config.resize_speed <= 0) then
-		notify("Invalid resize_speed value. It should be a positive number.", vim.log.levels.ERROR)
-		return
-	end
-
-	if new_config.ignore_filetypes and type(new_config.ignore_filetypes) ~= "table" then
-		notify("Invalid ignore_filetypes value. It should be a table.", vim.log.levels.ERROR)
-		return
-	end
-
 	M.config = vim.tbl_extend("force", M.config, new_config or {})
-	notify("Plugin configuration updated", vim.log.levels.INFO)
+	notify("Plugin configuration updated dynamically", vim.log.levels.INFO)
 end
 
--- Основная функция настройки плагина
+-- Function to configure the module
 function M.setup(opts)
 	M.config = vim.tbl_extend("force", M.config, opts or {})
 
+	-- Set key binding for toggling window size
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.key_toggle,
-		"<cmd>lua require('buffresize').toggle_window_size()<CR>",
+		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
 		{ noremap = true, silent = true }
 	)
 
+	-- Set key binding for enabling/disabling the plugin
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.key_enable,
-		"<cmd>lua require('buffresize').toggle_plugin()<CR>",
+		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
+
 		{ noremap = true, silent = true }
 	)
-
-	vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
-		callback = function()
-			local win_id = vim.api.nvim_get_current_win()
-			if not should_ignore_window(win_id) then
-				local total_width = vim.o.columns
-				local target_width = math.floor(total_width * M.config.max_width)
-				smooth_resize(win_id, target_width, M.config.resize_speed)
-			end
-		end,
-	})
 end
 
+-- Export functions
 M.toggle_window_size = toggle_window_size
 M.toggle_plugin = toggle_plugin
 M.update_config = M.update_config
