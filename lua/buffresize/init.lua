@@ -157,7 +157,12 @@ function M.setup(opts)
 
 	-- Autocommand to resize on focus change
 	vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
-		callback = resize_on_focus,
+		callback = function()
+			local win_id = vim.api.nvim_get_current_win()
+			if not should_ignore_window(win_id) then
+				resize_on_focus()
+			end
+		end,
 	})
 end
 
