@@ -47,10 +47,11 @@ local function set_window_width(win_id, width)
 end
 
 -- Проверяем, нужно ли игнорировать данное окно
--- 1. Если окно плавающее (relative ~= ""), то игнорируем
--- 2. Если filetype входит в список игнорируемых, то игнорируем
--- 3. При желании можно дополнить проверками на buftype и т.д.
 local function should_ignore_window(win_id)
+	if not vim.api.nvim_win_is_valid(win_id) then
+		return true
+	end
+
 	-- Проверка на плавающее окно
 	local win_config = vim.api.nvim_win_get_config(win_id)
 	if win_config.relative ~= "" then
@@ -63,14 +64,7 @@ local function should_ignore_window(win_id)
 
 	-- Проверяем в списке игнорируемых
 	for _, ft in ipairs(M.config.ignore_filetypes) do
-		-- Если нужно игнорировать точное совпадение:
-		-- if filetype == ft then
-		--   return true
-		-- end
-
-		-- Если нужно игнорировать и с учётом возможных вариаций (например, "neo-tree")
-		-- начинающихся/содержащих что-то, можно так:
-		if filetype:lower():match(ft:lower()) then
+		if filetype == ft then
 			return true
 		end
 	end
@@ -79,16 +73,14 @@ local function should_ignore_window(win_id)
 end
 
 -- Функция плавного (пошагового) изменения размера окна
--- Используем vim.defer_fn, чтобы не блокировать основной поток
 local function smooth_resize(win_id, target_width, speed)
-	local current_width = get_window_width(win_id)
 	if not vim.api.nvim_win_is_valid(win_id) then
 		return
 	end
 
+	local current_width = get_window_width(win_id)
 	local step = (target_width - current_width) / speed
 
-	-- Создаём "анимацию" через defer_fn
 	for i = 1, speed do
 		vim.defer_fn(function()
 			if vim.api.nvim_win_is_valid(win_id) then
@@ -107,7 +99,6 @@ local function notify(msg, level)
 end
 
 -- Основная логика переключения размера текущего окна
--- Между M.config.min_width и M.config.max_width
 local function toggle_window_size()
 	if not M.config.enabled then
 		notify("Resize plugin is disabled", vim.log.levels.WARN)
@@ -116,7 +107,6 @@ local function toggle_window_size()
 
 	local win_id = vim.api.nvim_get_current_win()
 
-	-- Игнорируем окно, если оно соответствует критериям ignore
 	if should_ignore_window(win_id) then
 		notify("Window ignored due to its filetype or config", vim.log.levels.INFO)
 		return
@@ -124,47 +114,22 @@ local function toggle_window_size()
 
 	local total_width = vim.o.columns
 
-	-- Инициализируем состояние окна, если ещё нет
 	if not window_states[win_id] then
 		window_states[win_id] = { expanded = false }
 	end
 
 	local target_width
 	if window_states[win_id].expanded then
-		-- Если окно уже "expanded", переключаем на min_width
 		target_width = math.floor(total_width * M.config.min_width)
 	else
-		-- Если окно не "expanded", переключаем на max_width
 		target_width = math.floor(total_width * M.config.max_width)
 	end
 
-	-- Плавно меняем размер
 	smooth_resize(win_id, target_width, M.config.resize_speed)
 
-	-- Переключаем флаг expanded
 	window_states[win_id].expanded = not window_states[win_id].expanded
 
 	notify("Window size toggled", vim.log.levels.INFO)
-end
-
--- Функция для изменения размера окна при получении фокуса
--- (срабатывает на WinEnter/BufEnter)
-local function resize_on_focus()
-	if not M.config.enabled then
-		return
-	end
-
-	local win_id = vim.api.nvim_get_current_win()
-
-	-- Игнорируем окно, если попадает под критерии
-	if should_ignore_window(win_id) then
-		return
-	end
-
-	local total_width = vim.o.columns
-	local target_width = math.floor(total_width * M.config.max_width)
-
-	smooth_resize(win_id, target_width, M.config.resize_speed)
 end
 
 -- Включение/выключение всего плагина (глобально)
@@ -185,10 +150,8 @@ end
 
 -- Основная функция настройки плагина
 function M.setup(opts)
-	-- Слияние пользовательских опций с опциями по умолчанию
 	M.config = vim.tbl_extend("force", M.config, opts or {})
 
-	-- Клавиша для переключения размера окна
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.key_toggle,
@@ -196,7 +159,6 @@ function M.setup(opts)
 		{ noremap = true, silent = true }
 	)
 
-	-- Клавиша для включения/выключения плагина
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.key_enable,
@@ -204,18 +166,18 @@ function M.setup(opts)
 		{ noremap = true, silent = true }
 	)
 
-	-- Автокоманда: при входе в окно или буфер — проверяем, не нужно ли изменить размер
 	vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
 		callback = function()
 			local win_id = vim.api.nvim_get_current_win()
 			if not should_ignore_window(win_id) then
-				resize_on_focus()
+				local total_width = vim.o.columns
+				local target_width = math.floor(total_width * M.config.max_width)
+				smooth_resize(win_id, target_width, M.config.resize_speed)
 			end
 		end,
 	})
 end
 
--- Экспортируем нужные функции
 M.toggle_window_size = toggle_window_size
 M.toggle_plugin = toggle_plugin
 M.update_config = M.update_config
