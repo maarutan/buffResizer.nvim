@@ -144,7 +144,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_toggle,
 		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
-		{ noremap = true, silent = true desc = "buffresize toggle window size" }
+		{ noremap = true, silent = true, desc = "buffresize toggle window size" }
 	)
 
 	-- Set key binding for enabling/disabling the plugin
