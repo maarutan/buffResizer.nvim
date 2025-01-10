@@ -51,8 +51,8 @@ local function is_ignored_adjacent(win_id)
 				local pos = vim.fn.win_screenpos(id)
 				local cur_pos = vim.fn.win_screenpos(win_id)
 
-				-- Check if the ignored window is adjacent (left or right)
-				if pos[2] < cur_pos[2] or pos[2] > cur_pos[2] + get_window_width(win_id) then
+				-- Ensure ignored window and buffers are totally unaffected
+				if pos[2] <= cur_pos[2] + get_window_width(win_id) and pos[2] + get_window_width(id) >= cur_pos[2] then
 					return true
 				end
 			end
