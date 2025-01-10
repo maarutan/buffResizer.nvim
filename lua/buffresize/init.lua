@@ -8,7 +8,7 @@ M.config = {
 	max_width = 0.7, -- Maximum window width (as a percentage of total width)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "neo-tree" }, -- Filetypes to ignore
+	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
 	notify = false, -- Whether to show notifications
 }
@@ -134,6 +134,15 @@ function M.setup(opts)
 		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
 		{ noremap = true, silent = true }
 	)
+
+	-- Automatically resize window on focus
+	vim.api.nvim_create_autocmd("WinEnter", {
+		callback = function()
+			if M.config.enabled then
+				toggle_window_size()
+			end
+		end,
+	})
 end
 
 -- Export functions
