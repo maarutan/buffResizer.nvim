@@ -144,6 +144,33 @@ end
 
 -- Функция для динамического обновления конфигурации
 function M.update_config(new_config)
+	-- Проверка на соответствие типов перед обновлением
+	if
+		new_config.min_width
+		and (type(new_config.min_width) ~= "number" or new_config.min_width <= 0 or new_config.min_width >= 1)
+	then
+		notify("Invalid min_width value. It should be a number between 0 and 1.", vim.log.levels.ERROR)
+		return
+	end
+
+	if
+		new_config.max_width
+		and (type(new_config.max_width) ~= "number" or new_config.max_width <= 0 or new_config.max_width >= 1)
+	then
+		notify("Invalid max_width value. It should be a number between 0 and 1.", vim.log.levels.ERROR)
+		return
+	end
+
+	if new_config.resize_speed and (type(new_config.resize_speed) ~= "number" or new_config.resize_speed <= 0) then
+		notify("Invalid resize_speed value. It should be a positive number.", vim.log.levels.ERROR)
+		return
+	end
+
+	if new_config.ignore_filetypes and type(new_config.ignore_filetypes) ~= "table" then
+		notify("Invalid ignore_filetypes value. It should be a table.", vim.log.levels.ERROR)
+		return
+	end
+
 	M.config = vim.tbl_extend("force", M.config, new_config or {})
 	notify("Plugin configuration updated", vim.log.levels.INFO)
 end
