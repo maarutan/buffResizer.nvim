@@ -20,6 +20,18 @@ M.config = {
 		"telescope",
 		"lazy",
 		"mason",
+		"lazygit",
+		"packer",
+		"cmp",
+		"cmp_doc",
+		"cmp_path",
+		"cmp_luasnip",
+		"cmp_buffer",
+		"cmp_nvim_lsp",
+		"bufferline",
+		"lualine",
+		"dashboard",
+		"alpha",
 	},
 	enabled = true, -- Whether the plugin is enabled by default
 	notify = false, -- Whether to show notifications
