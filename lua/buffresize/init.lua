@@ -11,7 +11,7 @@ M.config = {
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
 	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl", "toggleterm", "yazi", "telescope" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
-	notify = false, -- Whether to show notifications
+	notify = true, -- Whether to show notifications
 }
 
 -- Table to store window states
@@ -124,7 +124,7 @@ function M.setup(opts)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.key_toggle,
-		"<cmd>lua require'window_focus_resize'.toggle_window_size()<CR>",
+		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
 		{ noremap = true, silent = true }
 	)
 
@@ -132,7 +132,7 @@ function M.setup(opts)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.key_enable,
-		"<cmd>lua require'window_focus_resize'.toggle_plugin()<CR>",
+		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
 		{ noremap = true, silent = true }
 	)
 end
