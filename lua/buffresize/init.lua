@@ -8,7 +8,7 @@ M.config = {
 	max_width = 0.7, -- Maximum window width (as a percentage of total width)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl", "help", "terminal", "quickfix", "nofile" }, -- Filetypes to ignore
+	ignore_filetypes = { "neo-tree" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
 	notify = false, -- Whether to show notifications
 }
@@ -38,6 +38,21 @@ local function should_ignore_window(win_id)
 	return false
 end
 
+-- Function for smooth window resizing
+local function smooth_resize(win_id, target_width)
+	local current_width = get_window_width(win_id)
+	local step = (target_width - current_width) / 10
+
+	for i = 1, 10 do
+		vim.defer_fn(function()
+			if vim.api.nvim_win_is_valid(win_id) then
+				local new_width = math.floor(current_width + step * i)
+				set_window_width(win_id, new_width)
+			end
+		end, i * 10)
+	end
+end
+
 -- Notify function based on configuration
 local function notify(msg, level)
 	if M.config.notify then
@@ -46,14 +61,13 @@ local function notify(msg, level)
 end
 
 -- Main logic for toggling window size
-local function toggle_window_size(win_id)
+local function toggle_window_size()
 	if not M.config.enabled then
 		notify("Resize plugin is disabled", vim.log.levels.WARN)
 		return
 	end
 
-	-- Use the current window if no specific ID is passed
-	win_id = win_id or vim.api.nvim_get_current_win()
+	local win_id = vim.api.nvim_get_current_win()
 
 	-- Ignore the window if its filetype is in the ignore list
 	if should_ignore_window(win_id) then
@@ -70,11 +84,15 @@ local function toggle_window_size(win_id)
 	end
 
 	-- Determine target size
-	local target_width = window_states[win_id].expanded and math.floor(total_width * M.config.min_width)
-		or math.floor(total_width * M.config.max_width)
+	local target_width
+	if window_states[win_id].expanded then
+		target_width = math.floor(total_width * M.config.min_width)
+	else
+		target_width = math.floor(total_width * M.config.max_width)
+	end
 
-	-- Set the window width directly (no smooth resize)
-	set_window_width(win_id, target_width)
+	-- Perform smooth resize
+	smooth_resize(win_id, target_width)
 
 	-- Update window state
 	window_states[win_id].expanded = not window_states[win_id].expanded
@@ -89,25 +107,6 @@ local function toggle_plugin()
 	else
 		notify("Resize plugin disabled", vim.log.levels.WARN)
 	end
-end
-
--- Auto-resize windows on focus
-local function resize_on_focus()
-	if not M.config.enabled then
-		return
-	end
-
-	local win_id = vim.api.nvim_get_current_win()
-
-	if should_ignore_window(win_id) then
-		return
-	end
-
-	local total_width = vim.o.columns
-	local target_width = math.floor(total_width * M.config.max_width)
-
-	set_window_width(win_id, target_width)
-	notify("Window resized on focus", vim.log.levels.INFO)
 end
 
 -- Function to dynamically update settings
@@ -125,7 +124,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_toggle,
 		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
-		{ noremap = true, silent = true, desc = "Toggle window size" }
+		{ noremap = true, silent = true }
 	)
 
 	-- Set key binding for enabling/disabling the plugin
@@ -133,13 +132,8 @@ function M.setup(opts)
 		"n",
 		M.config.key_enable,
 		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
-		{ noremap = true, silent = true, desc = "Enable/disable resize plugin" }
+		{ noremap = true, silent = true }
 	)
-
-	-- Auto-resize on focus
-	vim.api.nvim_create_autocmd("WinEnter", {
-		callback = resize_on_focus,
-	})
 end
 
 -- Export functions
