@@ -37,7 +37,6 @@ local function should_ignore_window(win_id)
 	end
 	return false
 end
-
 -- Check if neo-tree is present and adjacent
 local function is_neotree_adjacent(win_id)
 	local wins = vim.api.nvim_tabpage_list_wins(0)
