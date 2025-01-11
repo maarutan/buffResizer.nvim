@@ -38,7 +38,7 @@ local function resize_buffer()
 	vim.api.nvim_win_set_width(0, new_width)
 end
 
-local function create_split(direction)
+function M.create_split(direction)
 	if not M.config.enabled then
 		notify("disable", vim.log.levels.WARN)
 		return
