@@ -4,14 +4,14 @@ local BuffResize = {}
 BuffResize.config = {
 	enabled = true,
 	notify = true,
-	ignored_buffers = { "neo-tree", "lazy", "mason", "toggleterm", "telescope" },
+	ignored_filetypes = { "neo-tree", "lazy", "mason", "toggleterm", "telescope" },
 	keys = {
 		toggle_resize = "<leader>rw",
 		toggle_plugin = "<leader>re",
 	},
 	notification_icon = "\u{fb96}", -- 
-	notification_enable_msg = "Buffresize enable",
-	notification_disable_msg = "Buffresize disable",
+	notification_enable_msg = "Buffresize enabled",
+	notification_disable_msg = "Buffresize disabled",
 	expanded_width = 70,
 	collapsed_width = 25,
 }
@@ -28,10 +28,11 @@ local function notify(msg, level)
 	end
 end
 
--- Function to check if a buffer should be ignored
-local function is_ignored(buffer_name)
-	for _, name in ipairs(BuffResize.config.ignored_buffers) do
-		if string.find(buffer_name, name) then
+-- Function to check if a buffer should be ignored based on filetype
+local function is_ignored()
+	local filetype = vim.api.nvim_buf_get_option(0, "filetype")
+	for _, ft in ipairs(BuffResize.config.ignored_filetypes) do
+		if filetype == ft then
 			return true
 		end
 	end
@@ -45,14 +46,14 @@ local function resize_window()
 		return
 	end
 
-	local win_id = vim.api.nvim_get_current_win()
-	local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win_id))
-
-	if is_ignored(buf_name) then
+	if is_ignored() then
 		return
 	end
 
-	if vim.api.nvim_win_get_width(win_id) <= BuffResize.config.collapsed_width then
+	local win_id = vim.api.nvim_get_current_win()
+	local width = vim.api.nvim_win_get_width(win_id)
+
+	if width <= BuffResize.config.collapsed_width then
 		vim.api.nvim_win_set_width(win_id, BuffResize.config.expanded_width)
 		BuffResize.state.resized_buffers[win_id] = true
 	elseif BuffResize.state.resized_buffers[win_id] then
@@ -101,12 +102,7 @@ function BuffResize.setup(config)
 	-- Autocommand to handle focus changes
 	vim.api.nvim_create_autocmd("WinEnter", {
 		callback = function()
-			local win_id = vim.api.nvim_get_current_win()
-			local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win_id))
-			if is_ignored(buf_name) then
-				return
-			end
-			if BuffResize.config.enabled then
+			if BuffResize.config.enabled and not is_ignored() then
 				resize_window()
 			end
 		end,
