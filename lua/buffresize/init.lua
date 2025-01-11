@@ -38,16 +38,37 @@ local function should_ignore_window(win_id)
 	return false
 end
 
--- Function to check if a window should be ignored across the session
-local function is_session_ignored(win_id)
-	local buf_id = vim.api.nvim_win_get_buf(win_id)
-	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-	for _, ft in ipairs(M.config.ignore_filetypes) do
-		if filetype == ft then
-			return true -- Globally ignore this filetype
+-- Function to find the neo-tree window (or any ignored window)
+local function find_ignored_window()
+	for _, win_id in ipairs(vim.api.nvim_list_wins()) do
+		local buf_id = vim.api.nvim_win_get_buf(win_id)
+		local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
+		for _, ft in ipairs(M.config.ignore_filetypes) do
+			if filetype == ft then
+				return win_id
+			end
 		end
 	end
-	return false
+	return nil -- No ignored window found
+end
+
+-- Resize the ignored window (e.g., neo-tree)
+local function resize_ignored_window(buffer_focused)
+	local ignored_win_id = find_ignored_window()
+	if not ignored_win_id then
+		return -- No ignored window to resize
+	end
+
+	local total_width = vim.o.columns
+	local target_width
+
+	if buffer_focused then
+		target_width = math.floor(total_width * M.config.min_width)
+	else
+		target_width = math.floor(total_width * M.config.max_width)
+	end
+
+	smooth_resize(ignored_win_id, target_width, M.config.resize_speed)
 end
 
 -- Function for smooth window resizing
@@ -72,9 +93,12 @@ local function toggle_window_size()
 	local win_id = vim.api.nvim_get_current_win()
 
 	-- Ignore the window if its filetype is in the ignore list
-	if should_ignore_window(win_id) or is_session_ignored(win_id) then
+	if should_ignore_window(win_id) then
+		resize_ignored_window(true) -- Resize neo-tree if focus is on buffer
 		return
 	end
+
+	resize_ignored_window(false) -- Expand neo-tree if buffer loses focus
 
 	local total_width = vim.o.columns
 	local win_width = get_window_width(win_id)
