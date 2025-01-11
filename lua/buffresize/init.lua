@@ -26,13 +26,25 @@ local function set_window_width(win_id, width)
 	vim.api.nvim_win_set_width(win_id, width)
 end
 
--- Check if the window should be ignored
+-- Check if the window should be ignored globally
 local function should_ignore_window(win_id)
 	local buf_id = vim.api.nvim_win_get_buf(win_id)
 	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
 	for _, ft in ipairs(M.config.ignore_filetypes) do
 		if filetype == ft then
 			return true
+		end
+	end
+	return false
+end
+
+-- Function to check if a window should be ignored across the session
+local function is_session_ignored(win_id)
+	local buf_id = vim.api.nvim_win_get_buf(win_id)
+	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
+	for _, ft in ipairs(M.config.ignore_filetypes) do
+		if filetype == ft then
+			return true -- Globally ignore this filetype
 		end
 	end
 	return false
@@ -60,7 +72,7 @@ local function toggle_window_size()
 	local win_id = vim.api.nvim_get_current_win()
 
 	-- Ignore the window if its filetype is in the ignore list
-	if should_ignore_window(win_id) then
+	if should_ignore_window(win_id) or is_session_ignored(win_id) then
 		return
 	end
 
