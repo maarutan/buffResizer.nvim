@@ -1,19 +1,19 @@
 local M = {}
 
--- Параметры плагина
+-- Plugin configuration
 M.config = {
-	enabled = true, -- Если false, плагин отключён
-	notify = true, -- Если false, уведомления отключены
+	enabled = true, -- If false, the plugin is disabled
+	notify = true, -- If false, notifications are disabled
 	keymaps = {
 		toggle_resize = "<leader>rw",
 		toggle_plugin = "<leader>re",
 		vertical_split = "<leader>wv",
 		horizontal_split = "<leader>wh",
 	},
-	notification_icon = "\u{2f56}", -- Иконка для уведомлений
-	min_width = 25, -- Минимальная ширина для сужения (% от ширины окна)
-	max_width = 70, -- Максимальная ширина для развёртки (% от ширины окна)
-	start_width = 50, -- Начальная ширина при создании сплита (% от ширины окна)
+	notification_icon = "\u{2f56}", -- Icon for notifications
+	min_width = 25, -- Minimum width for collapsing (% of the window width)
+	max_width = 70, -- Maximum width for expanding (% of the window width)
+	start_width = 50, -- Initial width when creating a split (% of the window width)
 }
 
 local tracked_windows = {}
@@ -105,7 +105,7 @@ end
 function M.setup(user_config)
 	M.config = vim.tbl_deep_extend("force", M.config, user_config or {})
 
-	-- Назначение горячих клавиш
+	-- Key mappings
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.toggle_resize,
@@ -131,7 +131,7 @@ function M.setup(user_config)
 		{ noremap = true, silent = true }
 	)
 
-	-- Авто-команда для обработки изменения размера при фокусе
+	-- Auto-command to handle resize on focus
 	vim.api.nvim_create_autocmd("WinEnter", {
 		callback = function()
 			if M.config.enabled then
@@ -141,7 +141,7 @@ function M.setup(user_config)
 		end,
 	})
 
-	-- Авто-команда для сужения окна при уходе фокуса
+	-- Auto-command to handle collapse on losing focus
 	vim.api.nvim_create_autocmd("WinLeave", {
 		callback = function()
 			if M.config.enabled then
@@ -151,7 +151,7 @@ function M.setup(user_config)
 		end,
 	})
 
-	-- Авто-команда для обработки ручного изменения размера
+	-- Auto-command to handle manual resizing
 	vim.api.nvim_create_autocmd("WinResized", {
 		callback = function()
 			if M.config.enabled then
@@ -161,7 +161,7 @@ function M.setup(user_config)
 		end,
 	})
 
-	-- Удаление окон из трекинга при закрытии
+	-- Remove windows from tracking when closed
 	vim.api.nvim_create_autocmd("WinClosed", {
 		callback = function(event)
 			local win = tonumber(event.match)
