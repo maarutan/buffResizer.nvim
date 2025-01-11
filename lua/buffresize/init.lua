@@ -10,9 +10,9 @@ M.config = {
 		vertical_split = "<leader>wv",
 	},
 	notification_icon = "\u{2f56}", -- Icon for notifications
-	min_width = 25, -- Minimum width for collapsing (% of the window width)
-	max_width = 70, -- Maximum width for expanding (% of the window width)
-	start_width = 50, -- Initial width when creating a split (% of the window width)
+	min_width = 25, -- Minimum width for collapsing (% of screen width)
+	max_width = 70, -- Maximum width for expanding (% of screen width)
+	start_width = 50, -- Initial width when creating a split (% of screen width)
 }
 
 local tracked_windows = {}
@@ -65,18 +65,14 @@ local function handle_manual_resize(win)
 	end
 end
 
-function M.create_split(direction)
+function M.create_split()
 	if not M.config.enabled then
 		notify("disable", vim.log.levels.WARN)
 		return
 	end
 
-	if direction ~= "vertical" then
-		notify("Only vertical splits are supported", vim.log.levels.WARN)
-		return
-	end
-
-	vim.cmd("vsplit")
+	local split_cmd = "vsplit"
+	vim.cmd(split_cmd)
 
 	local win = vim.api.nvim_get_current_win()
 	tracked_windows[win] = true
@@ -104,7 +100,7 @@ end
 function M.setup(user_config)
 	M.config = vim.tbl_deep_extend("force", M.config, user_config or {})
 
-	-- Key mappings
+	-- Keybindings
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.toggle_resize,
@@ -120,11 +116,11 @@ function M.setup(user_config)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.vertical_split,
-		"<cmd>lua require('buffresize').create_split('vertical')<CR>",
+		"<cmd>lua require('buffresize').create_split()<CR>",
 		{ noremap = true, silent = true }
 	)
 
-	-- Auto-command to handle resize on focus
+	-- Autocommand for resizing on focus
 	vim.api.nvim_create_autocmd("WinEnter", {
 		callback = function()
 			if M.config.enabled then
@@ -134,7 +130,7 @@ function M.setup(user_config)
 		end,
 	})
 
-	-- Auto-command to handle collapse on losing focus
+	-- Autocommand for collapsing on losing focus
 	vim.api.nvim_create_autocmd("WinLeave", {
 		callback = function()
 			if M.config.enabled then
@@ -144,7 +140,7 @@ function M.setup(user_config)
 		end,
 	})
 
-	-- Auto-command to handle manual resizing
+	-- Autocommand for manual resize handling
 	vim.api.nvim_create_autocmd("WinResized", {
 		callback = function()
 			if M.config.enabled then
@@ -154,7 +150,7 @@ function M.setup(user_config)
 		end,
 	})
 
-	-- Remove windows from tracking when closed
+	-- Remove windows from tracking on close
 	vim.api.nvim_create_autocmd("WinClosed", {
 		callback = function(event)
 			local win = tonumber(event.match)
