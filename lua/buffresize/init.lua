@@ -46,14 +46,13 @@ local function resize_window()
 	end
 
 	local win_id = vim.api.nvim_get_current_win()
-	local width = vim.api.nvim_win_get_width(win_id)
 	local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win_id))
 
 	if is_ignored(buf_name) then
 		return
 	end
 
-	if width <= BuffResize.config.collapsed_width then
+	if vim.api.nvim_win_get_width(win_id) <= BuffResize.config.collapsed_width then
 		vim.api.nvim_win_set_width(win_id, BuffResize.config.expanded_width)
 		BuffResize.state.resized_buffers[win_id] = true
 	elseif BuffResize.state.resized_buffers[win_id] then
@@ -104,7 +103,10 @@ function BuffResize.setup(config)
 		callback = function()
 			local win_id = vim.api.nvim_get_current_win()
 			local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win_id))
-			if BuffResize.config.enabled and not is_ignored(buf_name) then
+			if is_ignored(buf_name) then
+				return
+			end
+			if BuffResize.config.enabled then
 				resize_window()
 			end
 		end,
