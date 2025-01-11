@@ -27,7 +27,7 @@ local function is_resizeable(buf)
 	return buf_name == "buffresizevert" or buf_name == "buffresizehori"
 end
 
-local function resize_buffer(win)
+local function resize_buffer_on_focus(win)
 	local buf = vim.api.nvim_win_get_buf(win)
 	if not is_resizeable(buf) then
 		return
@@ -62,7 +62,7 @@ end
 
 function M.toggle_resize()
 	local win = vim.api.nvim_get_current_win()
-	resize_buffer(win)
+	resize_buffer_on_focus(win)
 end
 
 function M.toggle_plugin()
@@ -104,7 +104,8 @@ function M.setup(user_config)
 	vim.api.nvim_create_autocmd("WinEnter", {
 		callback = function()
 			if M.config.enabled then
-				M.toggle_resize()
+				local win = vim.api.nvim_get_current_win()
+				resize_buffer_on_focus(win)
 			end
 		end,
 	})
