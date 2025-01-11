@@ -9,7 +9,7 @@ M.config = {
 		toggle_plugin = "<leader>re",
 		vertical_split = "<leader>wv",
 	},
-	notification_icon = "\u{2f56}", -- Icon for notifications
+	notification_icon = "🪓", -- Icon for notifications
 	min_width = 25, -- Minimum width for collapsing (% of screen width)
 	max_width = 70, -- Maximum width for expanding (% of screen width)
 	start_width = 50, -- Initial width when creating a split (% of screen width)
