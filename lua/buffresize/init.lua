@@ -9,7 +9,7 @@ BuffResize.config = {
 		toggle_resize = "<leader>rw",
 		toggle_plugin = "<leader>re",
 	},
-	notification_icon = "\u{fb96}", -- 
+	notification_icon = "\u{fb96}", -- ﮖ
 	notification_enable_msg = "Buffresize enabled",
 	notification_disable_msg = "Buffresize disabled",
 	expanded_width = 70, -- Percentage of total width
@@ -31,8 +31,10 @@ end
 -- Function to check if a buffer should be ignored based on filetype
 local function is_ignored()
 	local filetype = vim.api.nvim_buf_get_option(0, "filetype")
+	notify("Current filetype: " .. filetype, vim.log.levels.DEBUG) -- Debug message
 	for _, ft in ipairs(BuffResize.config.ignored_filetypes) do
 		if filetype == ft then
+			notify("Filetype ignored: " .. filetype, vim.log.levels.DEBUG) -- Debug message
 			return true
 		end
 	end
@@ -114,7 +116,10 @@ function BuffResize.setup(config)
 	vim.api.nvim_create_autocmd("WinEnter", {
 		callback = function()
 			if BuffResize.config.enabled and not is_ignored() then
+				notify("Resizing window on focus change", vim.log.levels.DEBUG)
 				resize_window()
+			else
+				notify("Ignored window on focus change", vim.log.levels.DEBUG)
 			end
 		end,
 	})
