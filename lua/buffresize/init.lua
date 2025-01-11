@@ -28,15 +28,13 @@ local function is_tracked(win)
 	return tracked_windows[win] ~= nil
 end
 
-local function resize_tracked_window(win)
+local function resize_tracked_window(win, expand)
 	if not is_tracked(win) then
 		return
 	end
 
-	local win_width = vim.api.nvim_win_get_width(win)
-	local new_width = (win_width <= math.floor(vim.o.columns * 0.25)) and math.floor(vim.o.columns * 0.7)
-		or math.floor(vim.o.columns * 0.25)
-	vim.api.nvim_win_set_width(win, new_width)
+	local target_width = expand and math.floor(vim.o.columns * 0.7) or math.floor(vim.o.columns * 0.25)
+	vim.api.nvim_win_set_width(win, target_width)
 end
 
 function M.create_split(direction)
@@ -62,7 +60,11 @@ end
 
 function M.toggle_resize()
 	local win = vim.api.nvim_get_current_win()
-	resize_tracked_window(win)
+	if is_tracked(win) then
+		local win_width = vim.api.nvim_win_get_width(win)
+		local expand = win_width <= math.floor(vim.o.columns * 0.25)
+		resize_tracked_window(win, expand)
+	end
 end
 
 function M.toggle_plugin()
@@ -105,7 +107,19 @@ function M.setup(user_config)
 		callback = function()
 			if M.config.enabled then
 				local win = vim.api.nvim_get_current_win()
-				resize_tracked_window(win)
+				local win_width = vim.api.nvim_win_get_width(win)
+				local expand = win_width <= math.floor(vim.o.columns * 0.25)
+				resize_tracked_window(win, expand)
+			end
+		end,
+	})
+
+	-- Авто-команда для сжатия окна при потере фокуса
+	vim.api.nvim_create_autocmd("WinLeave", {
+		callback = function()
+			if M.config.enabled then
+				local win = vim.api.nvim_get_current_win()
+				resize_tracked_window(win, false)
 			end
 		end,
 	})
