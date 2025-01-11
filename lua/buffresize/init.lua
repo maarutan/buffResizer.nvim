@@ -117,7 +117,7 @@ function M.setup(user_config)
 		"n",
 		M.config.keymaps.vertical_split,
 		"<cmd>lua require('buffresize').create_split()<CR>",
-		{ noremap = true, silent = true, "  horizontal Split" }
+		{ noremap = true, silent = true, desc = "  horizontal Split" }
 	)
 
 	-- Autocommand for collapsing on losing focus
