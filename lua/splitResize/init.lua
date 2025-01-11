@@ -21,7 +21,7 @@ local manual_resized = {}
 local function notify(description, level)
 	if M.config.notify then
 		vim.notify(
-			string.format("%s Buffresize %s", M.config.notification_icon, description),
+			string.format("%s splitResize %s", M.config.notification_icon, description),
 			level or vim.log.levels.INFO
 		)
 	end
@@ -108,19 +108,19 @@ function M.setup(user_config)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.toggle_resize,
-		"<cmd>lua require('buffresize').toggle_resize()<CR>",
+		"<cmd>lua require('splitResize').toggle_resize()<CR>",
 		{ noremap = true, silent = true, desc = "Toggle resize functionality" }
 	)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.toggle_plugin,
-		"<cmd>lua require('buffresize').toggle_plugin()<CR>",
-		{ noremap = true, silent = true, desc = "Toggle the buffresize plugin" }
+		"<cmd>lua require('splitResize').toggle_plugin()<CR>",
+		{ noremap = true, silent = true, desc = "Toggle the splitResize plugin" }
 	)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.vertical_split,
-		"<cmd>lua require('buffresize').create_split()<CR>",
+		"<cmd>lua require('splitResize').create_split()<CR>",
 		{ noremap = true, silent = true, desc = " Vertical Split" }
 	)
 
