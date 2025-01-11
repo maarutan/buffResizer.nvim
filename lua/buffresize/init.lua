@@ -1,123 +1,118 @@
--- Module for dynamic window resizing in Neovim
+local BuffResize = {}
 
-local M = {}
-
--- Default settings
-M.config = {
-	min_width = 0.25, -- Minimum window width (as a percentage of total width)
-	max_width = 0.7, -- Maximum window width (as a percentage of total width)
-	key_toggle = "<leader>rw", -- Key binding to toggle window size
-	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
-	enabled = true, -- Whether the plugin is enabled by default
+-- Configuration variables
+BuffResize.config = {
+	enabled = true,
+	notify = true,
+	ignored_buffers = { "neo-tree", "lazy", "mason", "toggleterm", "telescope" },
+	keys = {
+		toggle_resize = "<leader>rw",
+		toggle_plugin = "<leader>re",
+	},
+	notification_icon = "",
+	notification_enable_msg = "Buffresize enable",
+	notification_disable_msg = "Buffresize disable",
+	expanded_width = 70,
+	collapsed_width = 25,
 }
 
--- Table to store window states
-local window_states = {}
+-- State variables
+BuffResize.state = {
+	resized_buffers = {},
+}
 
--- Function to get the window width
-local function get_window_width(win_id)
-	return vim.api.nvim_win_get_width(win_id)
-end
-
--- Function to set the window width
-local function set_window_width(win_id, width)
-	vim.api.nvim_win_set_width(win_id, width)
-end
-
--- Smooth resizing logic (step-by-step resizing for better visual effect)
-local function smooth_resize(win_id, target_width, step)
-	step = step or 2
-	local current_width = get_window_width(win_id)
-
-	while current_width ~= target_width do
-		current_width = current_width + (current_width < target_width and step or -step)
-		if math.abs(current_width - target_width) < step then
-			current_width = target_width
-		end
-		set_window_width(win_id, current_width)
-		vim.cmd("redraw")
+-- Helper function to show notifications
+local function notify(msg, level)
+	if BuffResize.config.notify then
+		vim.notify(msg, level or vim.log.levels.WARN, { icon = BuffResize.config.notification_icon })
 	end
 end
 
--- Check if the window should be ignored globally
-local function should_ignore_window(win_id)
-	local buf_id = vim.api.nvim_win_get_buf(win_id)
-	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-	return vim.tbl_contains(M.config.ignore_filetypes, filetype)
+-- Function to check if a buffer should be ignored
+local function is_ignored(buffer_name)
+	for _, name in ipairs(BuffResize.config.ignored_buffers) do
+		if string.find(buffer_name, name) then
+			return true
+		end
+	end
+	return false
 end
 
--- Main logic for toggling window size
-local function toggle_window_size()
-	if not M.config.enabled then
-		print("Resize plugin is disabled")
+-- Function to resize the focused window
+local function resize_window()
+	if not BuffResize.config.enabled then
+		notify(BuffResize.config.notification_disable_msg, vim.log.levels.WARN)
 		return
 	end
 
 	local win_id = vim.api.nvim_get_current_win()
+	local width = vim.api.nvim_win_get_width(win_id)
+	local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win_id))
 
-	-- Ignore resizing logic if the focused window is in ignore_filetypes
-	if should_ignore_window(win_id) then
-		print("Cannot resize an ignored window")
+	if is_ignored(buf_name) then
 		return
 	end
 
-	local total_width = vim.o.columns
-	local win_width = get_window_width(win_id)
-
-	-- Initialize window state
-	if not window_states[win_id] then
-		window_states[win_id] = { expanded = false }
-	end
-
-	-- Determine target size
-	local target_width
-	if window_states[win_id].expanded then
-		target_width = math.floor(total_width * M.config.min_width)
-	else
-		target_width = math.floor(total_width * M.config.max_width)
-	end
-
-	-- Perform smooth resize
-	smooth_resize(win_id, target_width)
-
-	-- Update window state
-	window_states[win_id].expanded = not window_states[win_id].expanded
-end
-
--- Function to enable/disable the plugin
-local function toggle_plugin()
-	M.config.enabled = not M.config.enabled
-	if M.config.enabled then
-		print("Resize plugin enabled")
-	else
-		print("Resize plugin disabled")
+	if width <= BuffResize.config.collapsed_width then
+		vim.api.nvim_win_set_width(win_id, BuffResize.config.expanded_width)
+		BuffResize.state.resized_buffers[win_id] = true
+	elseif BuffResize.state.resized_buffers[win_id] then
+		vim.api.nvim_win_set_width(win_id, BuffResize.config.collapsed_width)
+		BuffResize.state.resized_buffers[win_id] = nil
 	end
 end
 
--- Function to configure the module
-function M.setup(opts)
-	M.config = vim.tbl_extend("force", M.config, opts or {})
+-- Function to reset the plugin state
+local function reset_resized_buffers()
+	BuffResize.state.resized_buffers = {}
+end
 
-	-- Set key binding for toggling window size
+-- Toggle the plugin on or off
+function BuffResize.toggle_plugin()
+	BuffResize.config.enabled = not BuffResize.config.enabled
+	local msg = BuffResize.config.enabled and BuffResize.config.notification_enable_msg
+		or BuffResize.config.notification_disable_msg
+	notify(msg, vim.log.levels.WARN)
+end
+
+-- Toggle resize logic on demand
+function BuffResize.toggle_resize()
+	resize_window()
+end
+
+-- Setup function to initialize the plugin
+function BuffResize.setup(config)
+	BuffResize.config = vim.tbl_extend("force", BuffResize.config, config or {})
+
+	-- Keybindings
 	vim.api.nvim_set_keymap(
 		"n",
-		M.config.key_toggle,
-		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
+		BuffResize.config.keys.toggle_resize,
+		":lua require('buffresize').toggle_resize()<CR>",
 		{ noremap = true, silent = true }
 	)
 
-	-- Set key binding for enabling/disabling the plugin
 	vim.api.nvim_set_keymap(
 		"n",
-		M.config.key_enable,
-		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
+		BuffResize.config.keys.toggle_plugin,
+		":lua require('buffresize').toggle_plugin()<CR>",
 		{ noremap = true, silent = true }
 	)
+
+	-- Autocommand to handle focus changes
+	vim.api.nvim_create_autocmd("WinEnter", {
+		callback = function()
+			if BuffResize.config.enabled then
+				resize_window()
+			end
+		end,
+	})
+
+	vim.api.nvim_create_autocmd("WinLeave", {
+		callback = function()
+			reset_resized_buffers()
+		end,
+	})
 end
 
--- Export functions
-M.toggle_window_size = toggle_window_size
-M.toggle_plugin = toggle_plugin
-
-return M
+return BuffResize
