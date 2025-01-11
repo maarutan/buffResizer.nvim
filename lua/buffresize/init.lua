@@ -13,6 +13,7 @@ M.config = {
 	notification_icon = "\u{2f56}", -- Иконка для уведомлений
 	min_width = 25, -- Минимальная ширина для сужения (% от ширины окна)
 	max_width = 70, -- Максимальная ширина для развёртки (% от ширины окна)
+	start_width = 50, -- Начальная ширина при создании сплита (% от ширины окна)
 }
 
 local tracked_windows = {}
@@ -79,12 +80,12 @@ function M.create_split(direction)
 	manual_resized[win] = nil
 
 	local total_columns = vim.o.columns
-	local initial_width = math.floor(total_columns * (M.config.min_width / 100))
+	local start_width = math.floor(total_columns * (M.config.start_width / 100))
 
 	if direction == "vertical" then
-		vim.api.nvim_win_set_width(win, initial_width)
+		vim.api.nvim_win_set_width(win, start_width)
 	else
-		vim.api.nvim_win_set_height(win, math.floor(vim.o.lines * 0.25))
+		vim.api.nvim_win_set_height(win, math.floor(vim.o.lines * 0.5))
 	end
 
 	notify("split created", vim.log.levels.INFO)
