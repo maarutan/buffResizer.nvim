@@ -11,6 +11,8 @@ M.config = {
 		horizontal_split = "<leader>wh",
 	},
 	notification_icon = "\u{2f56}", -- Иконка для уведомлений
+	min_width = 25, -- Минимальная ширина для сужения (% от ширины окна)
+	max_width = 70, -- Максимальная ширина для развёртки (% от ширины окна)
 }
 
 local tracked_windows = {}
@@ -28,13 +30,19 @@ local function is_tracked(win)
 	return tracked_windows[win] ~= nil
 end
 
-local function resize_tracked_window(win, expand)
+local function resize_tracked_window(win)
 	if not is_tracked(win) then
 		return
 	end
 
-	local target_width = expand and math.floor(vim.o.columns * 0.7) or math.floor(vim.o.columns * 0.25)
-	vim.api.nvim_win_set_width(win, target_width)
+	local win_width = vim.api.nvim_win_get_width(win)
+	local total_columns = vim.o.columns
+
+	local min_width = math.floor(total_columns * (M.config.min_width / 100))
+	local max_width = math.floor(total_columns * (M.config.max_width / 100))
+
+	local new_width = win_width <= min_width and max_width or min_width
+	vim.api.nvim_win_set_width(win, new_width)
 end
 
 function M.create_split(direction)
@@ -49,8 +57,11 @@ function M.create_split(direction)
 	local win = vim.api.nvim_get_current_win()
 	tracked_windows[win] = true
 
+	local total_columns = vim.o.columns
+	local initial_width = math.floor(total_columns * (M.config.min_width / 100))
+
 	if direction == "vertical" then
-		vim.api.nvim_win_set_width(win, math.floor(vim.o.columns * 0.25))
+		vim.api.nvim_win_set_width(win, initial_width)
 	else
 		vim.api.nvim_win_set_height(win, math.floor(vim.o.lines * 0.25))
 	end
@@ -60,11 +71,7 @@ end
 
 function M.toggle_resize()
 	local win = vim.api.nvim_get_current_win()
-	if is_tracked(win) then
-		local win_width = vim.api.nvim_win_get_width(win)
-		local expand = win_width <= math.floor(vim.o.columns * 0.25)
-		resize_tracked_window(win, expand)
-	end
+	resize_tracked_window(win)
 end
 
 function M.toggle_plugin()
@@ -107,19 +114,7 @@ function M.setup(user_config)
 		callback = function()
 			if M.config.enabled then
 				local win = vim.api.nvim_get_current_win()
-				local win_width = vim.api.nvim_win_get_width(win)
-				local expand = win_width <= math.floor(vim.o.columns * 0.25)
-				resize_tracked_window(win, expand)
-			end
-		end,
-	})
-
-	-- Авто-команда для сжатия окна при потере фокуса
-	vim.api.nvim_create_autocmd("WinLeave", {
-		callback = function()
-			if M.config.enabled then
-				local win = vim.api.nvim_get_current_win()
-				resize_tracked_window(win, false)
+				resize_tracked_window(win)
 			end
 		end,
 	})
