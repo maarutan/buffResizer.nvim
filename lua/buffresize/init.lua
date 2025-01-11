@@ -1,16 +1,15 @@
 -- Module for dynamic window resizing in Neovim
-
 local M = {}
 
 -- Default settings
 M.config = {
 	min_width = 0.25, -- Minimum window width (as a percentage of total width)
 	max_width = 0.7, -- Maximum window width (as a percentage of total width)
+	resize_speed = 20, -- Window resize speed (in steps)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "neo-tree", "toggleterm", "telescope", "yazi" }, -- Filetypes to ignore
+	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
-	notify = false, -- Whether to show notifications
 }
 
 -- Table to store window states
@@ -38,50 +37,29 @@ local function should_ignore_window(win_id)
 	return false
 end
 
--- Check if any ignored filetype window is adjacent
-local function is_ignored_adjacent(win_id)
-	local wins = vim.api.nvim_tabpage_list_wins(0)
+-- Function for smooth window resizing
+local function smooth_resize(win_id, target_width, speed)
+	local current_width = get_window_width(win_id)
+	local step = (target_width - current_width) / speed
 
-	for _, id in ipairs(wins) do
-		if id ~= win_id then
-			local buf_id = vim.api.nvim_win_get_buf(id)
-			local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-
-			if vim.tbl_contains(M.config.ignore_filetypes, filetype) then
-				local pos = vim.fn.win_screenpos(id)
-				local cur_pos = vim.fn.win_screenpos(win_id)
-
-				-- Ensure ignored window and buffers are totally unaffected
-				if pos[2] <= cur_pos[2] + get_window_width(win_id) and pos[2] + get_window_width(id) >= cur_pos[2] then
-					return true
-				end
-			end
-		end
-	end
-
-	return false
-end
-
--- Notify function based on configuration
-local function notify(msg, level)
-	if M.config.notify then
-		vim.notify(msg, level or vim.log.levels.WARN)
+	for i = 1, speed do
+		vim.defer_fn(function()
+			local new_width = math.floor(current_width + step * i)
+			set_window_width(win_id, new_width)
+		end, i * 10)
 	end
 end
 
 -- Main logic for toggling window size
-local function toggle_window_size(win_id)
+local function toggle_window_size()
 	if not M.config.enabled then
-		notify("Resize plugin is disabled", vim.log.levels.WARN)
 		return
 	end
 
-	-- Use the current window if no specific ID is passed
-	win_id = win_id or vim.api.nvim_get_current_win()
+	local win_id = vim.api.nvim_get_current_win()
 
-	-- Ignore the window if its filetype is in the ignore list or any ignored window is adjacent
-	if should_ignore_window(win_id) or is_ignored_adjacent(win_id) then
-		notify("Window ignored due to its filetype or adjacency to ignored filetypes", vim.log.levels.INFO)
+	-- Ignore the window if its filetype is in the ignore list
+	if should_ignore_window(win_id) then
 		return
 	end
 
@@ -94,61 +72,34 @@ local function toggle_window_size(win_id)
 	end
 
 	-- Determine target size
-	local target_width = window_states[win_id].expanded and math.floor(total_width * M.config.min_width)
-		or math.floor(total_width * M.config.max_width)
+	local target_width
+	if window_states[win_id].expanded then
+		target_width = math.floor(total_width * M.config.min_width)
+	else
+		target_width = math.floor(total_width * M.config.max_width)
+	end
 
-	-- Set the window width directly
-	set_window_width(win_id, target_width)
+	-- Perform smooth resize
+	smooth_resize(win_id, target_width, M.config.resize_speed)
 
 	-- Update window state
 	window_states[win_id].expanded = not window_states[win_id].expanded
-	notify("Window size toggled", vim.log.levels.INFO)
 end
 
 -- Function to enable/disable the plugin
 local function toggle_plugin()
 	M.config.enabled = not M.config.enabled
 	if M.config.enabled then
-		notify("Resize plugin enabled", vim.log.levels.INFO)
+		print("Resize plugin enabled")
 	else
-		notify("Resize plugin disabled", vim.log.levels.WARN)
+		print("Resize plugin disabled")
 	end
-end
-
--- Auto-resize windows on focus
-local function resize_on_focus()
-	if not M.config.enabled then
-		return
-	end
-
-	local win_id = vim.api.nvim_get_current_win()
-
-	if should_ignore_window(win_id) or is_ignored_adjacent(win_id) then
-		return
-	end
-
-	local total_width = vim.o.columns
-	local target_width = math.floor(total_width * M.config.max_width)
-
-	set_window_width(win_id, target_width)
-	notify("Window resized on focus", vim.log.levels.INFO)
-end
-
--- Prevent interaction with ignored filetypes
-local function prevent_ignored_interaction()
-	local win_id = vim.api.nvim_get_current_win()
-
-	if should_ignore_window(win_id) or is_ignored_adjacent(win_id) then
-		notify("Interaction disabled for ignored filetype or adjacency", vim.log.levels.INFO)
-		return true
-	end
-	return false
 end
 
 -- Function to dynamically update settings
 function M.update_config(new_config)
 	M.config = vim.tbl_extend("force", M.config, new_config or {})
-	notify("Plugin configuration updated dynamically", vim.log.levels.INFO)
+	print("Plugin configuration updated dynamically")
 end
 
 -- Function to configure the module
@@ -160,7 +111,7 @@ function M.setup(opts)
 		"n",
 		M.config.key_toggle,
 		"<cmd>lua require'buffresize'.toggle_window_size()<CR>",
-		{ noremap = true, silent = true, desc = "Toggle window size" }
+		{ noremap = true, silent = true }
 	)
 
 	-- Set key binding for enabling/disabling the plugin
@@ -168,22 +119,8 @@ function M.setup(opts)
 		"n",
 		M.config.key_enable,
 		"<cmd>lua require'buffresize'.toggle_plugin()<CR>",
-		{ noremap = true, silent = true, desc = "Enable/disable resize plugin" }
+		{ noremap = true, silent = true }
 	)
-
-	-- Auto-resize on focus
-	vim.api.nvim_create_autocmd("WinEnter", {
-		callback = resize_on_focus,
-	})
-
-	-- Prevent interaction with ignored filetypes
-	vim.api.nvim_create_autocmd("BufEnter", {
-		callback = function()
-			if prevent_ignored_interaction() then
-				vim.cmd("stopinsert")
-			end
-		end,
-	})
 end
 
 -- Export functions
