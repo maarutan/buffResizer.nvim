@@ -8,7 +8,7 @@ M.config = {
 	resize_speed = 20, -- Window resize speed (in steps)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
+	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl", "toggleterm", "yazi", "mason", "lazy" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
 }
 
