@@ -13,6 +13,8 @@ M.config = {
 	notification_icon = "\u{2f56}", -- Иконка для уведомлений
 }
 
+local tracked_windows = {}
+
 local function notify(description, level)
 	if M.config.notify then
 		vim.notify(
@@ -22,14 +24,12 @@ local function notify(description, level)
 	end
 end
 
-local function is_resizeable(buf)
-	local buf_name = vim.api.nvim_buf_get_name(buf):match("([^/]+)$")
-	return buf_name == "buffresizevert" or buf_name == "buffresizehori"
+local function is_tracked(win)
+	return tracked_windows[win] ~= nil
 end
 
-local function resize_buffer_on_focus(win)
-	local buf = vim.api.nvim_win_get_buf(win)
-	if not is_resizeable(buf) then
+local function resize_tracked_window(win)
+	if not is_tracked(win) then
 		return
 	end
 
@@ -46,23 +46,23 @@ function M.create_split(direction)
 	end
 
 	local split_cmd = direction == "vertical" and "vsplit" or "split"
-	local buf_name = direction == "vertical" and "buffresizevert" or "buffresizehori"
-
 	vim.cmd(split_cmd)
-	local buf = vim.api.nvim_get_current_buf()
-	vim.api.nvim_buf_set_name(buf, buf_name)
 
 	local win = vim.api.nvim_get_current_win()
+	tracked_windows[win] = true
+
 	if direction == "vertical" then
 		vim.api.nvim_win_set_width(win, math.floor(vim.o.columns * 0.25))
 	else
 		vim.api.nvim_win_set_height(win, math.floor(vim.o.lines * 0.25))
 	end
+
+	notify("split created", vim.log.levels.INFO)
 end
 
 function M.toggle_resize()
 	local win = vim.api.nvim_get_current_win()
-	resize_buffer_on_focus(win)
+	resize_tracked_window(win)
 end
 
 function M.toggle_plugin()
@@ -105,8 +105,16 @@ function M.setup(user_config)
 		callback = function()
 			if M.config.enabled then
 				local win = vim.api.nvim_get_current_win()
-				resize_buffer_on_focus(win)
+				resize_tracked_window(win)
 			end
+		end,
+	})
+
+	-- Удаление окон из трекинга при закрытии
+	vim.api.nvim_create_autocmd("WinClosed", {
+		callback = function(event)
+			local win = tonumber(event.match)
+			tracked_windows[win] = nil
 		end,
 	})
 end
