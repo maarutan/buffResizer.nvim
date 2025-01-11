@@ -1,112 +1,113 @@
-local BuffResize = {}
+local M = {}
 
--- Configuration variables
-BuffResize.config = {
-	enabled = true,
-	notify = true,
-	keys = {
+-- Параметры плагина
+M.config = {
+	enabled = true, -- Если false, плагин отключён
+	notify = true, -- Если false, уведомления отключены
+	keymaps = {
 		toggle_resize = "<leader>rw",
 		toggle_plugin = "<leader>re",
-		resize_vertical_split = "<leader>rv",
+		vertical_split = "<leader>wv",
+		horizontal_split = "<leader>wh",
 	},
-	notification_icon = "\u{fb96}", -- ﮖ
-	notification_enable_msg = "Buffresize enabled",
-	notification_disable_msg = "Buffresize disabled",
-	expanded_width = 70, -- Percentage of total width
-	collapsed_width = 25, -- Percentage of total width
+	notification_icon = "\u{2f56}", -- Иконка для уведомлений
 }
 
--- State variables
-BuffResize.state = {
-	resized_buffers = {},
-	resize_only_buffer = nil, -- Buffer dedicated for resizing
-}
-
--- Helper function to show notifications
-local function notify(msg, level)
-	if BuffResize.config.notify then
-		vim.notify(msg, level or vim.log.levels.WARN, { icon = BuffResize.config.notification_icon })
+local function notify(description, level)
+	if M.config.notify then
+		vim.notify(
+			string.format("%s Buffresize %s", M.config.notification_icon, description),
+			level or vim.log.levels.INFO
+		)
 	end
 end
 
--- Function to resize the dedicated buffer window
-local function resize_dedicated_buffer()
-	если   нет   BuffResize.config.enabled   затем 
-		notify ( BuffResize.config.notification_disable_msg  ,  vim.log.levels.WARN )
-		возврат 
-	конец 
+local function is_resizeable(buf_name)
+	return buf_name == "buffresizevert" or buf_name == "buffresizehori"
+end
 
-	местный  win_id = vim.api.nvim_get_current_win()
-	местный  buf_id = vim.api.nvim_win_get_buf(win_id)
+local function resize_buffer()
+	local buf_name = vim.api.nvim_buf_get_name(0):match("([^/]+)$")
+	if not is_resizeable(buf_name) then
+		return
+	end
 
-	-- Изменяйте только размер выделенного буфера 
-	if BuffResize.state.resize_only_buffer and BuffResize.state.resize_only_buffer == buf_id then
-		local width = vim.api.nvim_win_get_width(win_id)
-		локальная  total_width = vim.o.columns
+	local win_width = vim.api.nvim_win_get_width(0)
+	local new_width = (win_width <= math.floor(vim.o.columns * 0.25)) and math.floor(vim.o.columns * 0.7)
+		or math.floor(vim.o.columns * 0.25)
+	vim.api.nvim_win_set_width(0, new_width)
+end
 
-		-- Проверьте, расширено ли окно 
-		если  BuffResize.state.resized_buffers[win_id] then
-			-- Свернуть окно 
-			vim.api.nvim_win_set_width(win_id, math.floor(total_width * BuffResize.config.collapsed_width / 100))
-			BuffResize.state.resized_buffers[win_id] = nil
-		else
-			-- Expand the window
-			vim.api.nvim_win_set_width (win_id, math.floor(total_width * BuffResize.config.expanded_width / 100))
-			BuffResize.state.resized_buffers [win_id] = true
-		конец 
+local function create_split(direction)
+	if not M.config.enabled then
+		notify("disable", vim.log.levels.WARN)
+		return
+	end
+
+	local split_cmd = direction == "vertical" and "vsplit" or "split"
+	local buf_name = direction == "vertical" and "buffresizevert" or "buffresizehori"
+
+	vim.cmd(split_cmd)
+	local buf = vim.api.nvim_get_current_buf()
+	vim.api.nvim_buf_set_name(buf, buf_name)
+
+	if direction == "vertical" then
+		vim.api.nvim_win_set_width(0, math.floor(vim.o.columns * 0.25))
 	else
-		notify("This buffer is not dedicated for resizing", vim.log.levels.INFO)
-	конечная 
-конец 
-
--- Включить или выключить плагин 
-функция   BuffResize.toggle_plugin  () 
-	BuffResize.config.enabled  =  не   BuffResize.config.enabled 
-	локальное   сообщение  =  BuffResize.config.enabled   и   BuffResize.config.notification_enable_msg 
-		или   BuffResize.config.notification_disable_msg 
-	уведомить  (  msg  ,  vim.log.levels.WARN  ) 
-конец 
-
--- Переключить логику изменения размера по требованию 
-функция   BuffResize.toggle_resize  () 
-	resize_dedicated_buffer()
+		vim.api.nvim_win_set_height(0, math.floor(vim.o.lines * 0.25))
+	end
 end
 
--- Создайте вертикальное разделение и установите его в качестве выделенного буфера изменения размера. 
-функция   BuffResize.create_resize_split  () 
-	vim.cmd  (  "всплит"  ) 
-	локальный   win_id  =  vim.api.nvim_get_current_win  () 
-	локальный   buf_id  =  vim.api.nvim_win_get_buf  (  win_id  ) 
+function M.toggle_resize()
+	local buf_name = vim.api.nvim_buf_get_name(0):match("([^/]+)$")
+	if is_resizeable(buf_name) then
+		resize_buffer()
+	end
+end
 
-	BuffResize.state.resize_only_buffer  =  buf_id 
-	notify  (  "Вертикальное разделение создано и установлено как буфер только для изменения размера"  ,  vim.log.levels.INFO  ) 
-конец 
+function M.toggle_plugin()
+	M.config.enabled = not M.config.enabled
+	local status = M.config.enabled and "enable" or "disable"
+	notify(status)
+end
 
--- Функция настройки для инициализации плагина 
-функция   BuffResize.setup  (  конфигурация  ) 
-	BuffResize.config  =  vim.tbl_extend  (  «force»  ,  BuffResize.config  ,  config   или  {}) 
+function M.setup(user_config)
+	M.config = vim.tbl_deep_extend("force", M.config, user_config or {})
 
-	-- Привязки клавиш 
-	vim.api.nvim_set_keymap  ( 
-		«н»  , 
-		BuffResize.config.keys.toggle_resize  , 
-		":lua require('buffresize').toggle_resize()<CR>"  , 
- {  noremap  =  true  ,  молчание  =  true  } 
- ) 
-
-	vim.api.nvim_set_keymap  ( 
-		«н»  , 
-		BuffResize.config.keys.toggle_plugin  , 
-		":lua require('buffresize').toggle_plugin()<CR>"  , 
- {  noremap  =  true  ,  молчание  =  true  } 
- ) 
-
-	vim.api.nvim_set_keymap  ( 
-		«н»  , 
-		BuffResize.config.keys.resize_vertical_split  , 
-		":lua require('buffresize').create_resize_split()<CR>"  , 
-		{ нормальная карта  = true, silent = true }
+	-- Назначение горячих клавиш
+	vim.api.nvim_set_keymap(
+		"n",
+		M.config.keymaps.toggle_resize,
+		"<cmd>lua require('buffresize').toggle_resize()<CR>",
+		{ noremap = true, silent = true }
 	)
+	vim.api.nvim_set_keymap(
+		"n",
+		M.config.keymaps.toggle_plugin,
+		"<cmd>lua require('buffresize').toggle_plugin()<CR>",
+		{ noremap = true, silent = true }
+	)
+	vim.api.nvim_set_keymap(
+		"n",
+		M.config.keymaps.vertical_split,
+		"<cmd>lua require('buffresize').create_split('vertical')<CR>",
+		{ noremap = true, silent = true }
+	)
+	vim.api.nvim_set_keymap(
+		"n",
+		M.config.keymaps.horizontal_split,
+		"<cmd>lua require('buffresize').create_split('horizontal')<CR>",
+		{ noremap = true, silent = true }
+	)
+
+	-- Авто-команда для обработки изменения размера при фокусе
+	vim.api.nvim_create_autocmd("WinEnter", {
+		callback = function()
+			if M.config.enabled then
+				M.toggle_resize()
+			end
+		end,
+	})
 end
 
-return  BuffResize 
+return M
