@@ -25,8 +25,6 @@ When creating a new window, the plugin automatically opens **a separate buffer**
 }
 ```
 
-````
-
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
@@ -86,9 +84,18 @@ The plugin works without any extra dependencies. However, if you want **smoother
 
 ---
 
+## FAQ
+
+### Can I use this with horizontal splits?
+
+No, the plugin is designed specifically for vertical splits. Horizontal splits remain unaffected.
+
+### What happens if I disable the plugin while a split is active?
+
+The split remains open, and you can control it using Neovim's default commands.
+
+---
+
 ## License
 
 This plugin is distributed under the **MIT License**. See the [LICENSE](LICENSE) file in this repository for details.
-
-```
-````
