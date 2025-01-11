@@ -9,7 +9,7 @@ BuffResize.config = {
 		toggle_resize = "<leader>rw",
 		toggle_plugin = "<leader>re",
 	},
-	notification_icon = "",
+	notification_icon = "\u{fb96}", -- 
 	notification_enable_msg = "Buffresize enable",
 	notification_disable_msg = "Buffresize disable",
 	expanded_width = 70,
@@ -102,7 +102,9 @@ function BuffResize.setup(config)
 	-- Autocommand to handle focus changes
 	vim.api.nvim_create_autocmd("WinEnter", {
 		callback = function()
-			if BuffResize.config.enabled then
+			local win_id = vim.api.nvim_get_current_win()
+			local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win_id))
+			if BuffResize.config.enabled and not is_ignored(buf_name) then
 				resize_window()
 			end
 		end,
