@@ -25,42 +25,32 @@ local function set_window_width(win_id, width)
 	vim.api.nvim_win_set_width(win_id, width)
 end
 
--- Function for smooth window resizing
-local function smooth_resize(win_id, target_width)
-	set_window_width(win_id, target_width)
+-- Smooth resizing logic (step-by-step resizing for better visual effect)
+local function smooth_resize(win_id, target_width, step)
+	step = step or 2
+	local current_width = get_window_width(win_id)
+
+	while current_width ~= target_width do
+		current_width = current_width + (current_width < target_width and step or -step)
+		if math.abs(current_width - target_width) < step then
+			current_width = target_width
+		end
+		set_window_width(win_id, current_width)
+		vim.cmd("redraw")
+	end
 end
 
 -- Check if the window should be ignored globally
 local function should_ignore_window(win_id)
 	local buf_id = vim.api.nvim_win_get_buf(win_id)
 	local filetype = vim.api.nvim_buf_get_option(buf_id, "filetype")
-	for _, ft in ipairs(M.config.ignore_filetypes) do
-		if filetype == ft then
-			return true
-		end
-	end
-	return false
-end
-
--- Resize the ignored window (e.g., neo-tree) only if it's alone with the buffer
-local function resize_ignored_window()
-	local total_windows = #vim.api.nvim_list_wins()
-
-	-- Ensure there's only one buffer and one ignored window
-	if total_windows > 2 then
-		return
-	end
-
-	for _, win_id in ipairs(vim.api.nvim_list_wins()) do
-		if should_ignore_window(win_id) then
-			return -- Do nothing if the ignored window is present and focused
-		end
-	end
+	return vim.tbl_contains(M.config.ignore_filetypes, filetype)
 end
 
 -- Main logic for toggling window size
 local function toggle_window_size()
 	if not M.config.enabled then
+		print("Resize plugin is disabled")
 		return
 	end
 
@@ -68,6 +58,7 @@ local function toggle_window_size()
 
 	-- Ignore resizing logic if the focused window is in ignore_filetypes
 	if should_ignore_window(win_id) then
+		print("Cannot resize an ignored window")
 		return
 	end
 
