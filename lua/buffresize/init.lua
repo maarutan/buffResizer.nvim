@@ -8,7 +8,6 @@ M.config = {
 		toggle_resize = "<leader>rw",
 		toggle_plugin = "<leader>re",
 		vertical_split = "<leader>wv",
-		horizontal_split = "<leader>wh",
 	},
 	notification_icon = "\u{2f56}", -- Icon for notifications
 	min_width = 25, -- Minimum width for collapsing (% of the window width)
@@ -72,8 +71,12 @@ function M.create_split(direction)
 		return
 	end
 
-	local split_cmd = direction == "vertical" and "vsplit" or "split"
-	vim.cmd(split_cmd)
+	if direction ~= "vertical" then
+		notify("Only vertical splits are supported", vim.log.levels.WARN)
+		return
+	end
+
+	vim.cmd("vsplit")
 
 	local win = vim.api.nvim_get_current_win()
 	tracked_windows[win] = true
@@ -82,11 +85,7 @@ function M.create_split(direction)
 	local total_columns = vim.o.columns
 	local start_width = math.floor(total_columns * (M.config.start_width / 100))
 
-	if direction == "vertical" then
-		vim.api.nvim_win_set_width(win, start_width)
-	else
-		vim.api.nvim_win_set_height(win, math.floor(vim.o.lines * 0.5))
-	end
+	vim.api.nvim_win_set_width(win, start_width)
 
 	notify("split created", vim.log.levels.INFO)
 end
@@ -122,12 +121,6 @@ function M.setup(user_config)
 		"n",
 		M.config.keymaps.vertical_split,
 		"<cmd>lua require('buffresize').create_split('vertical')<CR>",
-		{ noremap = true, silent = true }
-	)
-	vim.api.nvim_set_keymap(
-		"n",
-		M.config.keymaps.horizontal_split,
-		"<cmd>lua require('buffresize').create_split('horizontal')<CR>",
 		{ noremap = true, silent = true }
 	)
 
