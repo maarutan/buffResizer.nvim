@@ -32,7 +32,7 @@ local function is_tracked(win)
 end
 
 local function resize_tracked_window(win, focus)
-	if not is_tracked(win) or manual_resized[win] then
+	if not is_tracked(win) then
 		return
 	end
 
@@ -40,6 +40,10 @@ local function resize_tracked_window(win, focus)
 	local total_columns = vim.o.columns
 	local min_width = math.floor(total_columns * (M.config.min_width / 100))
 	local max_width = math.floor(total_columns * (M.config.max_width / 100))
+
+	if manual_resized[win] then
+		return
+	end -- Skip if manually resized
 
 	if focus then
 		if win_width <= min_width then
@@ -117,8 +121,18 @@ function M.setup(user_config)
 		"n",
 		M.config.keymaps.vertical_split,
 		"<cmd>lua require('buffresize').create_split()<CR>",
-		{ noremap = true, silent = true, desc = "  horizontal Split" }
+		{ noremap = true, silent = true, desc = " Vertical Split" }
 	)
+
+	-- Autocommand for resizing on focus
+	vim.api.nvim_create_autocmd("WinEnter", {
+		callback = function()
+			if M.config.enabled then
+				local win = vim.api.nvim_get_current_win()
+				resize_tracked_window(win, true)
+			end
+		end,
+	})
 
 	-- Autocommand for collapsing on losing focus
 	vim.api.nvim_create_autocmd("WinLeave", {
