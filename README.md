@@ -2,8 +2,6 @@
 
 ![Demo 1](./.github/splitResizer.mp4)
 
-![Mini animation demo](./.github/splitResizer_width_mini_anim.mp4)
-
 **splitResizer.nvim** is a Neovim plugin that **replaces the default `:vsplit`** for **vertical splits only**.  
 When creating a new window, the plugin automatically opens **a separate buffer** and provides convenient key bindings for:
 
@@ -20,17 +18,13 @@ When creating a new window, the plugin automatically opens **a separate buffer**
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
-{
-  "maarutan/splitResizer.nvim",
-}
+{ "maarutan/splitResizer.nvim" }
 ```
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
-use {
-  "maarutan/splitResizer.nvim"
-}
+use { "maarutan/splitResizer.nvim" }
 ```
 
 After installing, load the plugin in your Neovim config (example in Lua):
@@ -61,20 +55,11 @@ Below is the table of key parameters with their default values. You can override
 }
 ```
 
-Example of overriding these settings:
-
-```lua
-require("splitResizer").setup({
-  enabled = false,
-  min_width = 30,
-  max_width = 60,
-  -- etc.
-})
-```
-
 ---
 
 ## Additional Animation
+
+![Mini animation demo](./.github/splitResizer_width_mini_anim.mp4)
 
 The plugin works without any extra dependencies. However, if you want **smoother animations** for scrolling or cursor movement, you may consider:
 
