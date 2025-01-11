@@ -30,7 +30,7 @@ end
 
 -- Function to check if a buffer should be ignored based on filetype
 local function is_ignored()
-	local filetype = vim.bo.filetype
+	local filetype = vim.api.nvim_buf_get_option(0, "filetype")
 	for _, ft in ipairs(BuffResize.config.ignored_filetypes) do
 		if filetype == ft then
 			return true
