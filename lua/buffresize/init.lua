@@ -31,46 +31,46 @@ end
 -- Function to check if a buffer should be ignored based on filetype
 local function is_ignored()
 	local filetype = vim.api.nvim_buf_get_option(0, "filetype")
-	для   _  ,  ft   в   ipairs  (  BuffResize.config.ignored_filetypes  )  сделайте 
-		если   тип файла  ==  ft   тогда 
-			вернуть   истину 
-		конец 
-	конец 
-	вернуть   ложь 
-конец 
+	for _, ft in ipairs(BuffResize.config.ignored_filetypes) do
+		if filetype == ft then
+			return true
+		end
+	end
+	return false
+end
 
--- Функция изменения размера сфокусированного окна 
-локальная   функция   resize_window  () 
-	если   не   BuffResize.config.enabled   , то 
-		уведомить  (  BuffResize.config.notification_disable_msg  ,  vim.log.levels.WARN  ) 
-		возвращаться 
-	конец 
+-- Function to resize the focused window
+local function resize_window()
+	if not BuffResize.config.enabled then
+		notify(BuffResize.config.notification_disable_msg, vim.log.levels.WARN)
+		return
+	end
 
-	локальный   win_id  =  vim.api.nvim_get_current_win  () 
+	local win_id = vim.api.nvim_get_current_win()
 
 	-- Skip resizing for ignored windows
-	если   is_ignored  (),  то 
-		возвращаться 
-	конец 
+	if is_ignored() then
+		return
+	end
 
-	локальная   ширина  =  vim.api.nvim_win_get_width ( win_id )
-	местный   total_width  =  vim.o.columns 
+	local width = vim.api.nvim_win_get_width(win_id)
+	local total_width = vim.o.columns
 
-	-- Проверьте, расширено ли окно 
-	если   BuffResize.state.resized_buffers  [  win_id  ] then
-		-- Свернуть окно 
-		vim.api.nvim_win_set_width (win_id, math.floor(total_width * BuffResize.config.collapsed_width / 100))
-		BuffResize.state.resized_buffers [win_id] = nil
+	-- Check if the window is expanded
+	if BuffResize.state.resized_buffers[win_id] then
+		-- Collapse the window
+		vim.api.nvim_win_set_width(win_id, math.floor(total_width * BuffResize.config.collapsed_width / 100))
+		BuffResize.state.resized_buffers[win_id] = nil
 	else
-		-- Развернуть окно 
-		vim.api.nvim_win_set_width ( win_id ,  math.floor  ( total_width * BuffResize.config.expanded_width / 100))
-		BuffResize.state.resized_buffers [ win_id  ] =  true 
-	завершите 
+		-- Expand the window
+		vim.api.nvim_win_set_width(win_id, math.floor(total_width * BuffResize.config.expanded_width / 100))
+		BuffResize.state.resized_buffers[win_id] = true
+	end
 end
 
 -- Function to reset all window states
-local функция   reset_resized_buffers()
-	для  win_id, _ in pairs(BuffResize.state.resized_buffers) do
+local function reset_resized_buffers()
+	for win_id, _ in pairs(BuffResize.state.resized_buffers) do
 		if vim.api.nvim_win_is_valid(win_id) then
 			vim.api.nvim_win_set_width(win_id, math.floor(vim.o.columns * BuffResize.config.collapsed_width / 100))
 		end
