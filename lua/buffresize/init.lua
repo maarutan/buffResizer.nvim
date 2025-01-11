@@ -105,30 +105,20 @@ function M.setup(user_config)
 		"n",
 		M.config.keymaps.toggle_resize,
 		"<cmd>lua require('buffresize').toggle_resize()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true, desc = "Toggle resize functionality" }
 	)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.toggle_plugin,
 		"<cmd>lua require('buffresize').toggle_plugin()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true, desc = "Toggle the buffresize plugin" }
 	)
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymaps.vertical_split,
 		"<cmd>lua require('buffresize').create_split()<CR>",
-		{ noremap = true, silent = true }
+		{ noremap = true, silent = true, "  horizontal Split" }
 	)
-
-	-- Autocommand for resizing on focus
-	vim.api.nvim_create_autocmd("WinEnter", {
-		callback = function()
-			if M.config.enabled then
-				local win = vim.api.nvim_get_current_win()
-				resize_tracked_window(win, true)
-			end
-		end,
-	})
 
 	-- Autocommand for collapsing on losing focus
 	vim.api.nvim_create_autocmd("WinLeave", {
