@@ -24,7 +24,7 @@ BuffResize.state = {
 -- Helper function to show notifications
 local function notify(msg, level)
 	if BuffResize.config.notify then
-		vim.notify(msg, level or vim.log.levels.INFO, { icon = BuffResize.config.notification_icon })
+		vim.notify(msg, level or vim.log.levels.WARN, { icon = BuffResize.config.notification_icon })
 	end
 end
 
@@ -47,22 +47,18 @@ local function resize_window()
 	end
 
 	if is_ignored() then
-		notify("Ignored buffer type: " .. vim.bo.filetype, vim.log.levels.INFO)
 		return
 	end
 
 	local win_id = vim.api.nvim_get_current_win()
 	local width = vim.api.nvim_win_get_width(win_id)
-	notify("Current width: " .. width, vim.log.levels.DEBUG)
 
 	if width <= BuffResize.config.collapsed_width then
 		vim.api.nvim_win_set_width(win_id, BuffResize.config.expanded_width)
 		BuffResize.state.resized_buffers[win_id] = true
-		notify("Window expanded to " .. BuffResize.config.expanded_width, vim.log.levels.INFO)
 	elseif BuffResize.state.resized_buffers[win_id] then
 		vim.api.nvim_win_set_width(win_id, BuffResize.config.collapsed_width)
 		BuffResize.state.resized_buffers[win_id] = nil
-		notify("Window collapsed to " .. BuffResize.config.collapsed_width, vim.log.levels.INFO)
 	end
 end
 
