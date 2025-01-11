@@ -9,7 +9,7 @@ M.config = {
 	resize_speed = 20, -- Window resize speed (in steps)
 	key_toggle = "<leader>rw", -- Key binding to toggle window size
 	key_enable = "<leader>re", -- Key binding to enable/disable the plugin
-	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl", "scrollview" }, -- Filetypes to ignore
+	ignore_filetypes = { "NvimTree", "neo-tree", "dap-repl" }, -- Filetypes to ignore
 	enabled = true, -- Whether the plugin is enabled by default
 }
 
@@ -97,12 +97,6 @@ local function toggle_plugin()
 	end
 end
 
--- Function to dynamically update settings
-function M.update_config(new_config)
-	M.config = vim.tbl_extend("force", M.config, new_config or {})
-	print("Plugin configuration updated dynamically")
-end
-
 -- Function to configure the module
 function M.setup(opts)
 	M.config = vim.tbl_extend("force", M.config, opts or {})
@@ -127,6 +121,5 @@ end
 -- Export functions
 M.toggle_window_size = toggle_window_size
 M.toggle_plugin = toggle_plugin
-M.update_config = M.update_config
 
 return M
