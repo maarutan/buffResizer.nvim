@@ -37,8 +37,6 @@ require("splitResizer").setup()
 
 ## Default Configuration
 
-Below is the table of key parameters with their default values. You can override them by passing your own values to `setup({...})`:
-
 ```lua
 {
   enabled = true,         -- Plugin is enabled by default
