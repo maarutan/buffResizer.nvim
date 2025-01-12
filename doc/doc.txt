@@ -1,0 +1,103 @@
+*splitResizer.nvim.txt*               For Neovim/Vim version 0.7 or higher
+                                     Last change: 2025-01-12
+
+                               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                               splitResizer.nvim documentation
+                               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+==============================================================================
+CONTENTS                                                      *splitResizer-contents*
+1. Introduction ........................................... |splitResizer-intro|
+2. Installation ........................................... |splitResizer-install|
+3. Default configuration .................................. |splitResizer-config|
+4. Keymaps ................................................ |splitResizer-keymaps|
+5. License ................................................ |splitResizer-license|
+
+==============================================================================
+INTRODUCTION                                                 *splitResizer-intro*
+==============================================================================
+splitResizer.nvim is a Neovim plugin that serves as a replacement for the
+default `:vsplit` command, working exclusively with vertical splits. It
+automatically creates a separate buffer and offers convenient key mappings for
+toggling and resizing the current split window.
+
+Key points:
+- Automatically opens a vertical split with an initial width (percentage-based).
+- Manages width expansion and collapsing on focus changes.
+- Does not affect other windows, only the ones created through this plugin.
+- Minimal configuration with sensible defaults.
+
+==============================================================================
+INSTALLATION                                                 *splitResizer-install*
+==============================================================================
+You can install splitResizer.nvim with your favorite plugin manager.
+
+- Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+>
+    {
+      "maarutan/splitResizer.nvim",
+    }
+
+- Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+
+>
+    use {
+      "maarutan/splitResizer.nvim"
+    }
+
+After installation, load the plugin in your Neovim config:
+
+>
+    require("splitResizer").setup()
+
+==============================================================================
+DEFAULT CONFIGURATION                                        *splitResizer-config*
+==============================================================================
+Below are the default settings. Override them by passing your own table into
+the `setup()` function:
+
+>
+    {
+      enabled = true,          -- Plugin is enabled by default
+      notify = true,           -- Show notifications
+      keymaps = {
+        toggle_resize  = "<leader>rw",  -- Force toggle the current split width
+        toggle_plugin  = "<leader>re",  -- Toggle the plugin on/off
+        vertical_split = "<leader>wv",  -- Create a vertical split
+      },
+      notification_icon = "🪓", -- Icon displayed in notifications
+      min_width = 25,          -- Minimum width (as a % of total screen width)
+      max_width = 70,          -- Maximum width (as a % of total screen width)
+      start_width = 50,        -- Initial width (as a % of total screen width)
+    }
+
+Example:
+
+>
+    require("splitResizer").setup({
+      enabled = false,
+      min_width = 30,
+      max_width = 60,
+      -- etc.
+    })
+
+==============================================================================
+KEYMAPS                                                       *splitResizer-keymaps*
+==============================================================================
+By default, the plugin sets up these mappings:
+
+- <leader>rw : Toggle the split’s width (expand or collapse).
+- <leader>re : Toggle the entire plugin (enable/disable).
+- <leader>wv : Create a new vertical split (with plugin’s initial width).
+
+You can change these in the `keymaps` table under `setup()`.
+
+==============================================================================
+LICENSE                                                       *splitResizer-license*
+==============================================================================
+This plugin is distributed under the MIT License. Please see the repository’s
+LICENSE file for details.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
