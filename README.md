@@ -1,6 +1,6 @@
 # splitResizer.nvim
 
-https://github.com/user-attachments/assets/83901e41-9ef9-4151-8873-e06bb70350a7
+https://github.com/user-attachments/assets/fc84baec-54c8-40ba-81f4-5f9345fa86a3
 
 **splitResizer.nvim** is a Neovim plugin that **replaces the default `:vsplit`** for **vertical splits only**.  
 When creating a new window, the plugin automatically opens **a separate buffer** and provides convenient key bindings for:
