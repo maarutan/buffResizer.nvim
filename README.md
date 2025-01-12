@@ -1,6 +1,6 @@
 # splitResizer.nvim
 
-![Demo 1](./.github/splitResizer.mp4)
+https://github.com/user-attachments/assets/83901e41-9ef9-4151-8873-e06bb70350a7
 
 **splitResizer.nvim** is a Neovim plugin that **replaces the default `:vsplit`** for **vertical splits only**.  
 When creating a new window, the plugin automatically opens **a separate buffer** and provides convenient key bindings for:
@@ -59,7 +59,7 @@ Below is the table of key parameters with their default values. You can override
 
 ## Additional Animation
 
-![Mini animation demo](./.github/splitResizer_width_mini_anim.mp4)
+https://github.com/user-attachments/assets/23f41024-37d3-4188-aa8b-5dff4c810eff
 
 The plugin works without any extra dependencies. However, if you want **smoother animations** for scrolling or cursor movement, you may consider:
 
